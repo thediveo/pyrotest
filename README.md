@@ -43,7 +43,6 @@ var _ = Describe("example", func() {
     })
 
 })
-
 ```
 
 ## Contributing
