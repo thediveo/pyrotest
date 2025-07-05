@@ -3,7 +3,7 @@
 [![PkgGoDev](https://img.shields.io/badge/-reference-blue?logo=go&logoColor=white&labelColor=505050)](https://pkg.go.dev/github.com/thediveo/pyrotest)
 [![License](https://img.shields.io/github/license/thediveo/pyrotest)](https://img.shields.io/github/license/thediveo/pyrotest)
 ![build and test](https://github.com/thediveo/pyrotest/actions/workflows/buildandtest.yaml/badge.svg?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/thediveo/pyrotest)](https://goreportcard.com/report/github.com/thediveo/pyrotestb)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thediveo/pyrotest)](https://goreportcard.com/report/github.com/thediveo/pyrotest)
 ![Coverage](https://img.shields.io/badge/Coverage-95.6%25-brightgreen)
 
 `pyrotest` provides [Gomega matchers](https://onsi.github.io/gomega/) as well as
