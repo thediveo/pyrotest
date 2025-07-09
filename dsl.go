@@ -134,3 +134,17 @@ func HaveHelp(help any) MetricPropertyMatcher {
 		expected: help,
 	}
 }
+
+func HaveMetricValue(value any) MetricPropertyMatcher {
+	return &MetricValueMatcher{
+		matcher:  asMatcher(value),
+		expected: value,
+	}
+}
+
+func HaveBucketValues(values any) MetricPropertyMatcher {
+	return &MetricBucketMatcher{
+		matcher:  asMatcher(values),
+		expected: values,
+	}
+}

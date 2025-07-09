@@ -24,7 +24,7 @@ import (
 var _ = Describe("family property matchers", func() {
 
 	DescribeTable("GomegaString",
-		func(m metricPropertyMatcher, expected string) {
+		func(m metricFamilyPropertyMatcher, expected string) {
 			gs, ok := m.(format.GomegaStringer)
 			Expect(ok).To(BeTrue(), "not a GomegaStringer: %T", m)
 			Expect(gs.GomegaString()).To(MatchRegexp(expected))

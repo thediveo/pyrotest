@@ -30,13 +30,16 @@ type metricNamer interface {
 	indexname() string
 }
 
-// metricPropertyMatcher succeeds if a specific property of a metric family or
-// individual metric match, such as name, unit, help, and labels. Per the
-// Prometheus metrics model the name, unit and help properties apply at the
-// metrics family level, while the labels property applies at the individual
-// metrics level.
+// metricFamilyPropertyMatcher succeeds if a specific property of a metric
+// family match, such as name, unit, help, and labels. Per the Prometheus
+// metrics model only the name, unit and help properties apply at the metrics
+// family level.
+type metricFamilyPropertyMatcher interface {
+	matchFamilyProperty(*prommodel.MetricFamily) (bool, error)
+}
+
 type metricPropertyMatcher interface {
-	matchProperty(*prommodel.MetricFamily) (bool, error)
+	matchProperty(*prommodel.Metric) (bool, error)
 }
 
 // metricLabelMatcher succeeds if an actual LabelPair matches the specified name
@@ -49,10 +52,11 @@ type metricLabelMatcher interface {
 // metric family that satisfy a mandatory type, optional name, optional
 // properties other than name and labels, and finally a set of labels.
 type TypedMetricFamilyMatcher struct {
-	plainName        string                  // non-zero if plain string to match, otherwise "".
-	typ              prommodel.MetricType    // type of metric, such as counter, gauge, ...
-	propertyMatchers []metricPropertyMatcher // the metric and metric family properties to match.
-	labelMatchers    []metricLabelMatcher    // metric labels that must be all matched on the same metric.
+	plainName              string                        // non-zero if plain string to match, otherwise "".
+	typ                    prommodel.MetricType          // type of metric, such as counter, gauge, ...
+	familyPropertyMatchers []metricFamilyPropertyMatcher // the metric family properties to match.
+	metricPropertyMatchers []metricPropertyMatcher       // the properties of the same metric to match.
+	labelMatchers          []metricLabelMatcher          // metric labels that must be all matched on the same metric.
 }
 
 var (
@@ -81,11 +85,15 @@ func (m *TypedMetricFamilyMatcher) expectedName() string {
 }
 
 func (m *TypedMetricFamilyMatcher) expectedProperties() string {
-	if len(m.propertyMatchers) == 0 {
+	if len(m.familyPropertyMatchers) == 0 {
 		return ""
 	}
 	var s strings.Builder
-	for _, propMatcher := range m.propertyMatchers {
+	for _, propMatcher := range m.familyPropertyMatchers {
+		s.WriteRune('\n')
+		s.WriteString(format.Indent + propMatcher.(format.GomegaStringer).GomegaString())
+	}
+	for _, propMatcher := range m.metricPropertyMatchers {
 		s.WriteRune('\n')
 		s.WriteString(format.Indent + propMatcher.(format.GomegaStringer).GomegaString())
 	}
@@ -128,9 +136,11 @@ func metricOfType(mettype prommodel.MetricType, props ...MetricPropertyMatcher) 
 				// map.
 				continue
 			}
-			m.propertyMatchers = append(m.propertyMatchers, matcher.(metricPropertyMatcher))
+			m.familyPropertyMatchers = append(m.familyPropertyMatchers, matcher.(metricFamilyPropertyMatcher))
+		case metricFamilyPropertyMatcher:
+			m.familyPropertyMatchers = append(m.familyPropertyMatchers, matcher)
 		case metricPropertyMatcher:
-			m.propertyMatchers = append(m.propertyMatchers, matcher)
+			m.metricPropertyMatchers = append(m.metricPropertyMatchers, matcher)
 		case metricLabelMatcher:
 			m.labelMatchers = append(m.labelMatchers, matcher)
 		default:
@@ -153,8 +163,8 @@ func (m *TypedMetricFamilyMatcher) match(metfam *prommodel.MetricFamily) (bool, 
 	if m.plainName != "" && m.plainName != metfam.GetName() {
 		return false, nil
 	}
-	for _, propmatcher := range m.propertyMatchers {
-		success, err := propmatcher.matchProperty(metfam)
+	for _, propmatcher := range m.familyPropertyMatchers {
+		success, err := propmatcher.matchFamilyProperty(metfam)
 		if err != nil {
 			return false, err
 		}
@@ -168,7 +178,14 @@ func (m *TypedMetricFamilyMatcher) match(metfam *prommodel.MetricFamily) (bool, 
 		return true, nil
 	}
 	for _, metric := range metfam.GetMetric() {
-		success, err := matchAllLabels(metric.GetLabel(), m.labelMatchers)
+		success, err := matchAllProperties(metric, m.metricPropertyMatchers)
+		if err != nil {
+			return false, err
+		}
+		if !success {
+			continue
+		}
+		success, err = matchAllLabels(metric.GetLabel(), m.labelMatchers)
 		if err != nil {
 			return false, err
 		}
@@ -185,4 +202,17 @@ func (m *TypedMetricFamilyMatcher) match(metfam *prommodel.MetricFamily) (bool, 
 // metric (family) names.
 func (m *TypedMetricFamilyMatcher) indexname() string {
 	return m.plainName
+}
+
+func matchAllProperties(metric *prommodel.Metric, matchers []metricPropertyMatcher) (bool, error) {
+	for _, matcher := range matchers {
+		success, err := matcher.matchProperty(metric)
+		if err != nil {
+			return false, err
+		}
+		if !success {
+			return false, nil
+		}
+	}
+	return true, nil
 }

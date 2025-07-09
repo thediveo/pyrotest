@@ -22,6 +22,22 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func puint64(u64 uint64) *uint64 {
+	return &u64
+}
+
+func pfloat64(f64 float64) *float64 {
+	return &f64
+}
+
+func pbuckets(counts []uint64) []*prommodel.Bucket {
+	buckets := make([]*prommodel.Bucket, 0, len(counts))
+	for _, count := range counts {
+		buckets = append(buckets, &prommodel.Bucket{CumulativeCount: puint64(count)})
+	}
+	return buckets
+}
+
 type invalidM struct{}
 
 func (m *invalidM) yesimametricpropertymatcher() {}
@@ -43,6 +59,9 @@ var _ = Describe("matching metrics in families", func() {
 		Metric: []*prommodel.Metric{
 			{
 				Label: labels,
+				Counter: &prommodel.Counter{
+					Value: pfloat64(42.666),
+				},
 			},
 			{
 				Label: []*prommodel.LabelPair{
@@ -52,8 +71,21 @@ var _ = Describe("matching metrics in families", func() {
 		},
 	}
 
+	histogramFamily := &prommodel.MetricFamily{
+		Name: pstr("_foo_bars"),
+		Type: prommodel.MetricType_HISTOGRAM.Enum(),
+		Metric: []*prommodel.Metric{
+			{
+				Label: labels,
+				Histogram: &prommodel.Histogram{
+					Bucket: pbuckets([]uint64{1, 2, 3, 4, 5}),
+				},
+			},
+		},
+	}
+
 	It("rejects a misconfigured metric name matcher", func() {
-		Expect((&MetricFamilyNameMatcher{}).matchProperty(counterFamily)).Error().To(HaveOccurred())
+		Expect((&MetricFamilyNameMatcher{}).matchFamilyProperty(counterFamily)).Error().To(HaveOccurred())
 	})
 
 	It("rejects an invalid matcher", func() {
@@ -61,8 +93,8 @@ var _ = Describe("matching metrics in families", func() {
 	})
 
 	DescribeTable("incorrectly configured property matchers",
-		func(m metricPropertyMatcher) {
-			Expect(m.matchProperty(counterFamily)).Error().To(MatchError(
+		func(m metricFamilyPropertyMatcher) {
+			Expect(m.matchFamilyProperty(counterFamily)).Error().To(MatchError(
 				ContainSubstring("to be either a string or GomegaMatcher")))
 		},
 		Entry("help property", HaveHelp(666)),
@@ -70,8 +102,8 @@ var _ = Describe("matching metrics in families", func() {
 	)
 
 	DescribeTable("matching the metric name",
-		func(m metricPropertyMatcher, matchExpectations types.GomegaMatcher) {
-			Expect(m.matchProperty(counterFamily)).To(matchExpectations)
+		func(m metricFamilyPropertyMatcher, matchExpectations types.GomegaMatcher) {
+			Expect(m.matchFamilyProperty(counterFamily)).To(matchExpectations)
 		},
 		Entry("correct name", HaveName("foo_bar_total"), BeTrue()),
 		Entry("correct name", HaveName(HavePrefix("foo_")), BeTrue()),
@@ -79,7 +111,7 @@ var _ = Describe("matching metrics in families", func() {
 	)
 
 	DescribeTable("returning a families index",
-		func(m metricPropertyMatcher, expected string) {
+		func(m metricFamilyPropertyMatcher, expected string) {
 			Expect(m.(metricNamer).indexname()).To(Equal(expected))
 		},
 		Entry("plain name", HaveName("foobar"), "foobar"),
@@ -87,17 +119,18 @@ var _ = Describe("matching metrics in families", func() {
 	)
 
 	DescribeTable("matching the metric type",
-		func(m MetricMatcher, matchExpectations types.GomegaMatcher) {
-			Expect(m.match(counterFamily)).To(matchExpectations)
+		func(metfam *prommodel.MetricFamily, m MetricMatcher, matchExpectations types.GomegaMatcher) {
+			Expect(m.match(metfam)).To(matchExpectations)
 		},
-		Entry("correct counter", Counter(), BeTrue()),
-		Entry("wrong gauge", Gauge(), BeFalse()),
-		Entry("wrong history", Histogram(), BeFalse()),
+		Entry("correct counter", counterFamily, Counter(), BeTrue()),
+		Entry("wrong gauge", counterFamily, Gauge(), BeFalse()),
+		Entry("wrong history", counterFamily, Histogram(), BeFalse()),
+		Entry("correct history", histogramFamily, Histogram(), BeTrue()),
 	)
 
 	DescribeTable("matching the metric unit",
-		func(m metricPropertyMatcher, matchExpectations types.GomegaMatcher) {
-			Expect(m.matchProperty(counterFamily)).To(matchExpectations)
+		func(m metricFamilyPropertyMatcher, matchExpectations types.GomegaMatcher) {
+			Expect(m.matchFamilyProperty(counterFamily)).To(matchExpectations)
 		},
 		Entry("correct unit", HaveUnit("gotchas"), BeTrue()),
 		Entry("correct unit regexp", HaveUnit(MatchRegexp(`go.*as`)), BeTrue()),
@@ -105,8 +138,8 @@ var _ = Describe("matching metrics in families", func() {
 	)
 
 	DescribeTable("matching the help",
-		func(m metricPropertyMatcher, matchExpectations types.GomegaMatcher) {
-			Expect(m.matchProperty(counterFamily)).To(matchExpectations)
+		func(m metricFamilyPropertyMatcher, matchExpectations types.GomegaMatcher) {
+			Expect(m.matchFamilyProperty(counterFamily)).To(matchExpectations)
 		},
 		Entry("correct help", HaveHelp("help!"), BeTrue()),
 		Entry("correct help regexp", HaveHelp(MatchRegexp(`he..!`)), BeTrue()),
@@ -138,6 +171,24 @@ var _ = Describe("matching metrics in families", func() {
 			Counter(HaveName(BeTrue()), HaveUnit(*counterFamily.Unit)),
 			MatchError(ContainSubstring("Expected a boolean"))),
 	)
+
+	Context("single metric properties", func() {
+
+		DescribeTable("matches the metric's value",
+			func(met *prommodel.Metric, m metricPropertyMatcher, matchExpectations types.GomegaMatcher) {
+				Expect(m.matchProperty(met)).To(matchExpectations)
+			},
+			Entry("matching Counter value",
+				counterFamily.Metric[0], HaveMetricValue(42.666), BeTrue()),
+			Entry("wrong Counter value",
+				counterFamily.Metric[1], HaveMetricValue(42.666), BeFalse()),
+			Entry("matching Histogram bucket counts",
+				histogramFamily.Metric[0], HaveBucketValues([]uint64{1, 2, 3, 4, 5}), BeTrue()),
+			Entry("wrong Histogram bucket counts",
+				histogramFamily.Metric[0], HaveBucketValues([]uint64{0, 1, 1, 2, 3, 5}), BeFalse()),
+		)
+
+	})
 
 	Context("labels", func() {
 

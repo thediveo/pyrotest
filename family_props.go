@@ -40,10 +40,10 @@ type MetricFamilyNameMatcher struct {
 }
 
 var (
-	_ (MetricPropertyMatcher) = (*MetricFamilyNameMatcher)(nil)
-	_ (metricNamer)           = (*MetricFamilyNameMatcher)(nil)
-	_ (metricPropertyMatcher) = (*MetricFamilyNameMatcher)(nil)
-	_ (format.GomegaStringer) = (*MetricFamilyNameMatcher)(nil)
+	_ (MetricPropertyMatcher)       = (*MetricFamilyNameMatcher)(nil)
+	_ (metricNamer)                 = (*MetricFamilyNameMatcher)(nil)
+	_ (metricFamilyPropertyMatcher) = (*MetricFamilyNameMatcher)(nil)
+	_ (format.GomegaStringer)       = (*MetricFamilyNameMatcher)(nil)
 )
 
 // GomegaString returns an optimized string representation of this metric family
@@ -62,7 +62,7 @@ func (m *MetricFamilyNameMatcher) indexname() string {
 	return m.plainname
 }
 
-func (m *MetricFamilyNameMatcher) matchProperty(mf *prommodel.MetricFamily) (bool, error) {
+func (m *MetricFamilyNameMatcher) matchFamilyProperty(mf *prommodel.MetricFamily) (bool, error) {
 	if m.matcher == nil {
 		return false, errors.New(format.Message(
 			m.expected, "to be either a string or GomegaMatcher"))
@@ -79,9 +79,9 @@ type MetricFamilyHelpMatcher struct {
 }
 
 var (
-	_ (MetricPropertyMatcher) = (*MetricFamilyHelpMatcher)(nil)
-	_ (metricPropertyMatcher) = (*MetricFamilyHelpMatcher)(nil)
-	_ (format.GomegaStringer) = (*MetricFamilyHelpMatcher)(nil)
+	_ (MetricPropertyMatcher)       = (*MetricFamilyHelpMatcher)(nil)
+	_ (metricFamilyPropertyMatcher) = (*MetricFamilyHelpMatcher)(nil)
+	_ (format.GomegaStringer)       = (*MetricFamilyHelpMatcher)(nil)
 )
 
 func (m *MetricFamilyHelpMatcher) GomegaString() string {
@@ -93,7 +93,7 @@ func (m *MetricFamilyHelpMatcher) GomegaString() string {
 
 func (m *MetricFamilyHelpMatcher) yesimametricpropertymatcher() {}
 
-func (m *MetricFamilyHelpMatcher) matchProperty(mf *prommodel.MetricFamily) (bool, error) {
+func (m *MetricFamilyHelpMatcher) matchFamilyProperty(mf *prommodel.MetricFamily) (bool, error) {
 	if m.matcher == nil {
 		return false, errors.New(format.Message(
 			m.expected, "to be either a string or GomegaMatcher"))
@@ -110,9 +110,9 @@ type MetricFamilyUnitMatcher struct {
 }
 
 var (
-	_ (MetricPropertyMatcher) = (*MetricFamilyUnitMatcher)(nil)
-	_ (metricPropertyMatcher) = (*MetricFamilyUnitMatcher)(nil)
-	_ (format.GomegaStringer) = (*MetricFamilyUnitMatcher)(nil)
+	_ (MetricPropertyMatcher)       = (*MetricFamilyUnitMatcher)(nil)
+	_ (metricFamilyPropertyMatcher) = (*MetricFamilyUnitMatcher)(nil)
+	_ (format.GomegaStringer)       = (*MetricFamilyUnitMatcher)(nil)
 )
 
 func (m *MetricFamilyUnitMatcher) GomegaString() string {
@@ -124,7 +124,7 @@ func (m *MetricFamilyUnitMatcher) GomegaString() string {
 
 func (m *MetricFamilyUnitMatcher) yesimametricpropertymatcher() {}
 
-func (m *MetricFamilyUnitMatcher) matchProperty(mf *prommodel.MetricFamily) (bool, error) {
+func (m *MetricFamilyUnitMatcher) matchFamilyProperty(mf *prommodel.MetricFamily) (bool, error) {
 	if m.matcher == nil {
 		return false, errors.New(format.Message(
 			m.expected, "to be either a string or GomegaMatcher"))

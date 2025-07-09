@@ -32,3 +32,15 @@ func asStringMatcher(a any) types.GomegaMatcher {
 		return nil
 	}
 }
+
+// asMatcher returns a types.Matcher to match the passed-in value, or the
+// passed-in Gomega matcher, or nil.
+func asMatcher(a any) types.GomegaMatcher {
+	if a == nil {
+		return nil
+	}
+	if gm, ok := a.(types.GomegaMatcher); ok {
+		return gm
+	}
+	return gomega.Equal(a)
+}
