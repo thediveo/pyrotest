@@ -16,9 +16,17 @@ package pyrotest
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/thediveo/pyrotest/to"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+var (
+	testHistoSamples = []float64{
+		0.5, 0.11, 0.18, 0.3, 0.33, 0.38, 0.41, 0.42, 0.66, 0.7, 0.9, 1.0, 1.1, 1.2, 2.0,
+	}
+	testHistoBoundaries = []float64{0.1, 0.2, 0.4, 0.8, 1.6}
 )
 
 type someCollector struct{}
@@ -37,14 +45,7 @@ func (c *someCollector) Collect(ch chan<- prometheus.Metric) {
 				"label": "scam",
 			}),
 		prometheus.CounterValue, 42.0)
-	buckets := map[float64]uint64{
-		0.1: 1,
-		0.2: 2,
-		0.4: 3,
-		0.8: 4,
-		1.6: 5,
-	}
-	sum := 0.5 + 0.11 + 0.18 + 0.3 + 0.33 + 0.38 + 0.41 + 0.42 + 0.66 + 0.7 + 0.9 + 1.0 + 1.1 + 1.2 + 1.3
+	buckets, count, sum := to.BucketsFromSamples(testHistoSamples, testHistoBoundaries)
 	ch <- prometheus.MustNewConstHistogram(
 		prometheus.NewDesc(
 			"foos",
@@ -53,7 +54,7 @@ func (c *someCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.Labels{
 				"label": "fools",
 			}),
-		1+2+3+4+5,
+		count,
 		sum,
 		buckets)
 }
@@ -63,7 +64,9 @@ var _ = Describe("single-metric properties", func() {
 	It("works with histograms", func() {
 		metfams := CollectAndLint(&someCollector{})
 		Expect(metfams).To(ContainMetrics(
-			Histogram(HaveBucketValues([]uint64{1, 2, 3, 4, 5}))))
+			Histogram(HaveBucketBoundaries(testHistoBoundaries))))
+		Expect(metfams).NotTo(ContainMetrics(
+			Histogram(HaveBucketBoundaries(append(testHistoBoundaries, 6.66)))))
 	})
 
 })

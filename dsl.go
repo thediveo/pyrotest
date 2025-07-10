@@ -118,7 +118,7 @@ func HaveName(name any) MetricPropertyMatcher {
 }
 
 // HaveUnit succeeds if a metric family has a unit that either equals the passed
-// string or matches the passed GomegaMatcher.
+// string or matches the passed [types.GomegaMatcher].
 func HaveUnit(unit any) MetricPropertyMatcher {
 	return &MetricFamilyUnitMatcher{
 		matcher:  asStringMatcher(unit),
@@ -127,7 +127,7 @@ func HaveUnit(unit any) MetricPropertyMatcher {
 }
 
 // HaveHelp succeeds if a metric family has a help text that either equals the
-// passed string or matches the passed GomegaMatcher.
+// passed string or matches the passed [types.GomegaMatcher].
 func HaveHelp(help any) MetricPropertyMatcher {
 	return &MetricFamilyHelpMatcher{
 		matcher:  asStringMatcher(help),
@@ -135,6 +135,8 @@ func HaveHelp(help any) MetricPropertyMatcher {
 	}
 }
 
+// HaveMetricValue succeeds if a metric is a Counter or a Gauge and has a
+// matching float64 value.
 func HaveMetricValue(value any) MetricPropertyMatcher {
 	return &MetricValueMatcher{
 		matcher:  asMatcher(value),
@@ -142,8 +144,13 @@ func HaveMetricValue(value any) MetricPropertyMatcher {
 	}
 }
 
-func HaveBucketValues(values any) MetricPropertyMatcher {
-	return &MetricBucketMatcher{
+// HaveBucketBoundaries succeeds if a metric is a Histogram and has the matching
+// (float64) bucket upper boundaries. Please note the “+Inf” boundary is
+// implicit and thus must not be specified in the bucket boundaries slice passed
+// to this matcher. If passed a [types.GomegaMatcher], this matcher gets passed
+// a slice of []uint64 explicit boundaries as the actual value.
+func HaveBucketBoundaries(values any) MetricPropertyMatcher {
+	return &HistoryBucketBoundariesMatcher{
 		matcher:  asMatcher(values),
 		expected: values,
 	}

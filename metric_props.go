@@ -22,6 +22,7 @@ import (
 	prommodel "github.com/prometheus/client_model/go"
 )
 
+// MetricValueMatcher matches the value property of a Counter or Gauge metric.
 type MetricValueMatcher struct {
 	matcher  types.GomegaMatcher
 	expected any
@@ -53,35 +54,38 @@ func (m *MetricValueMatcher) matchProperty(metric *prommodel.Metric) (bool, erro
 	}
 }
 
-type MetricBucketMatcher struct {
+// ----
+
+// HistoryBucketBoundariesMatcher matches the explicit bucket upper boundaries.
+type HistoryBucketBoundariesMatcher struct {
 	matcher  types.GomegaMatcher
 	expected any
 }
 
 var (
-	_ (MetricPropertyMatcher) = (*MetricBucketMatcher)(nil)
-	_ (metricPropertyMatcher) = (*MetricBucketMatcher)(nil)
-	_ (format.GomegaStringer) = (*MetricBucketMatcher)(nil)
+	_ (MetricPropertyMatcher) = (*HistoryBucketBoundariesMatcher)(nil)
+	_ (metricPropertyMatcher) = (*HistoryBucketBoundariesMatcher)(nil)
+	_ (format.GomegaStringer) = (*HistoryBucketBoundariesMatcher)(nil)
 )
 
-func (m *MetricBucketMatcher) GomegaString() string {
+func (m *HistoryBucketBoundariesMatcher) GomegaString() string {
 	if _, ok := m.expected.(types.GomegaMatcher); ok {
-		return fmt.Sprintf("buckets: %s", format.Object(m.expected, 1))
+		return fmt.Sprintf("bucket upper boundaries: %s", format.Object(m.expected, 1))
 	}
-	return fmt.Sprintf("buckets: %v", m.expected)
+	return fmt.Sprintf("bucket upper boundaries: %v", m.expected)
 }
 
-func (m *MetricBucketMatcher) yesimametricpropertymatcher() {}
+func (m *HistoryBucketBoundariesMatcher) yesimametricpropertymatcher() {}
 
-func (m *MetricBucketMatcher) matchProperty(metric *prommodel.Metric) (bool, error) {
+func (m *HistoryBucketBoundariesMatcher) matchProperty(metric *prommodel.Metric) (bool, error) {
 	switch {
 	case metric.Histogram != nil:
 		buckets := metric.Histogram.GetBucket()
-		b := make([]uint64, 0, len(buckets))
+		upperboundaries := make([]float64, 0, len(buckets))
 		for _, bucket := range buckets {
-			b = append(b, bucket.GetCumulativeCount())
+			upperboundaries = append(upperboundaries, bucket.GetUpperBound())
 		}
-		return m.matcher.Match(b)
+		return m.matcher.Match(upperboundaries)
 	default:
 		return false, nil
 	}

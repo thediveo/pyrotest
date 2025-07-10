@@ -173,8 +173,9 @@ func (m *TypedMetricFamilyMatcher) match(metfam *prommodel.MetricFamily) (bool, 
 		}
 	}
 	// nota bene: on a valid metric family we always have at least one metric;
-	// if the test doesn't care about labels at all, we can shortcut things here.
-	if len(m.labelMatchers) == 0 {
+	// if the test doesn't care about single metric properties or labels at all,
+	// we can shortcut things here.
+	if len(m.metricPropertyMatchers) == 0 && len(m.labelMatchers) == 0 {
 		return true, nil
 	}
 	for _, metric := range metfam.GetMetric() {

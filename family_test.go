@@ -183,9 +183,9 @@ var _ = Describe("matching metrics in families", func() {
 			Entry("wrong Counter value",
 				counterFamily.Metric[1], HaveMetricValue(42.666), BeFalse()),
 			Entry("matching Histogram bucket counts",
-				histogramFamily.Metric[0], HaveBucketValues([]uint64{1, 2, 3, 4, 5}), BeTrue()),
+				histogramFamily.Metric[0], HaveBucketBoundaries([]uint64{1, 2, 3, 4, 5}), BeTrue()),
 			Entry("wrong Histogram bucket counts",
-				histogramFamily.Metric[0], HaveBucketValues([]uint64{0, 1, 1, 2, 3, 5}), BeFalse()),
+				histogramFamily.Metric[0], HaveBucketBoundaries([]uint64{0, 1, 1, 2, 3, 5}), BeFalse()),
 		)
 
 	})
