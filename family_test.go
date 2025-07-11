@@ -17,26 +17,11 @@ package pyrotest
 import (
 	"github.com/onsi/gomega/types"
 	prommodel "github.com/prometheus/client_model/go"
+	"github.com/thediveo/pyrotest/to"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-func puint64(u64 uint64) *uint64 {
-	return &u64
-}
-
-func pfloat64(f64 float64) *float64 {
-	return &f64
-}
-
-func pbuckets(counts []uint64) []*prommodel.Bucket {
-	buckets := make([]*prommodel.Bucket, 0, len(counts))
-	for _, count := range counts {
-		buckets = append(buckets, &prommodel.Bucket{CumulativeCount: puint64(count)})
-	}
-	return buckets
-}
 
 type invalidM struct{}
 
@@ -60,16 +45,21 @@ var _ = Describe("matching metrics in families", func() {
 			{
 				Label: labels,
 				Counter: &prommodel.Counter{
-					Value: pfloat64(42.666),
+					Value: ptrof(42.666),
 				},
 			},
 			{
 				Label: []*prommodel.LabelPair{
-					{Name: pstr("foobar"), Value: pstr("barbaz")},
+					{Name: ptrof("foobar"), Value: ptrof("barbaz")},
 				},
 			},
 		},
 	}
+
+	upperboundaries := []float64{1, 2, 4, 8, 16}
+	buckets, count, sum := to.SampledBuckets(
+		[]float64{0, 22, 35, 1, 3, 7, 5, 1, 2, 2, 1, 9},
+		upperboundaries)
 
 	histogramFamily := &prommodel.MetricFamily{
 		Name: pstr("_foo_bars"),
@@ -78,7 +68,9 @@ var _ = Describe("matching metrics in families", func() {
 			{
 				Label: labels,
 				Histogram: &prommodel.Histogram{
-					Bucket: pbuckets([]uint64{1, 2, 3, 4, 5}),
+					Bucket:      to.OrderedBuckets(buckets),
+					SampleCount: ptrof(count),
+					SampleSum:   ptrof(sum),
 				},
 			},
 		},
@@ -183,9 +175,9 @@ var _ = Describe("matching metrics in families", func() {
 			Entry("wrong Counter value",
 				counterFamily.Metric[1], HaveMetricValue(42.666), BeFalse()),
 			Entry("matching Histogram bucket counts",
-				histogramFamily.Metric[0], HaveBucketBoundaries([]uint64{1, 2, 3, 4, 5}), BeTrue()),
+				histogramFamily.Metric[0], HaveBucketBoundaries(upperboundaries), BeTrue()),
 			Entry("wrong Histogram bucket counts",
-				histogramFamily.Metric[0], HaveBucketBoundaries([]uint64{0, 1, 1, 2, 3, 5}), BeFalse()),
+				histogramFamily.Metric[0], HaveBucketBoundaries(upperboundaries[1:]), BeFalse()),
 		)
 
 	})

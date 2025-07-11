@@ -14,34 +14,66 @@
 
 package to
 
-import "sort"
+import (
+	"slices"
+	"sort"
 
-// Buckets maps upper boundaries to corresponding bucket sample counts.
-type Buckets = map[float64]uint64
+	prommodel "github.com/prometheus/client_model/go"
+)
 
-// BucketsFromSamples returns the (cumulative) buckets, count, and sum for the
-// given lists of samples and bucket (inclusive) upper boundaries. The bucket
+// MappedBuckets maps (inclusive) upper boundaries to their corresponding bucket
+// sample counts.
+type MappedBuckets = map[float64]uint64
+
+// SampledBuckets returns the (cumulative) buckets, count, and sum for the given
+// lists of samples and bucket (inclusive) upper boundaries. The bucket
 // boundaries list must not include “+Inf”. In the Prometheus histogram bucket
 // model, the +Inf bucket is implicit in the sample sum and sample count.
-func BucketsFromSamples(samples []float64, upperboundaries []float64) (b Buckets, count uint64, sum float64) {
-	b = Buckets{}
+func SampledBuckets(samples []float64, upperboundaries []float64) (buckets MappedBuckets, count uint64, sum float64) {
+	buckets = MappedBuckets{}
 	l := len(upperboundaries)
 	for _, upperboundary := range upperboundaries {
-		b[upperboundary] = 0
+		buckets[upperboundary] = 0
 	}
 	for _, sample := range samples {
 		sum += sample
-		idx := sort.Search(l, func(i int) bool { return upperboundaries[i] >= sample })
+		idx := bucketIndex(sample, upperboundaries)
 		if idx >= l {
 			continue
 		}
-		b[upperboundaries[idx]] += 1
+		buckets[upperboundaries[idx]] += 1
 	}
 	cumulative := uint64(0)
 	for _, upperboundary := range upperboundaries {
-		bucketcount := b[upperboundary]
-		b[upperboundary] += cumulative
+		bucketcount := buckets[upperboundary]
+		buckets[upperboundary] += cumulative
 		cumulative += bucketcount
 	}
-	return b, uint64(len(samples)), sum
+	return buckets, uint64(len(samples)), sum
+}
+
+// bucketIndex returns the index of the bucket the sample falls into according
+// the the list of bucket upper boundaries. If the sample falls beyond the last
+// bucket boundary, bucketIndex returns len(upperboundaries).
+//
+// bucketIndex leverages the sort's binary search.
+func bucketIndex(sample float64, upperboundaries []float64) int {
+	return sort.Search(len(upperboundaries), func(i int) bool { return upperboundaries[i] >= sample })
+}
+
+// OrderedBuckets returns the list of Prometheus protobuf buckets for the
+// passed-in buckets map. The returned bucket list is sorted in ascending order
+// by bucket inclusive upper limits.
+func OrderedBuckets(buckets MappedBuckets) []*prommodel.Bucket {
+	prombuckets := make([]*prommodel.Bucket, 0, len(buckets))
+	for upperbound, cumcount := range buckets {
+		prombuckets = append(prombuckets, &prommodel.Bucket{
+			UpperBound:      &upperbound,
+			CumulativeCount: &cumcount,
+		})
+	}
+	slices.SortFunc(prombuckets, func(a, b *prommodel.Bucket) int {
+		return int(a.GetUpperBound()) - int(b.GetUpperBound())
+	})
+	return prombuckets
 }

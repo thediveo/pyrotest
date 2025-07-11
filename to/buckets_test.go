@@ -19,27 +19,50 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("samples conversion", func() {
+var _ = Describe("conversions", func() {
 
-	It("converts samples into cumulative buckets ", func() {
-		ubs := []float64{1.0, 2.0, 4.0}
-		samples := []float64{0.0, 0.5, 1.0, 1.5, 3.2, 6.66}
-		buckets, count, sum := BucketsFromSamples(samples, ubs)
+	Context("histogram buckets", func() {
 
-		Expect(count).To(Equal(uint64(len(samples))))
+		It("converts samples into cumulative histogram buckets ", func() {
+			ubs := []float64{1.0, 2.0, 4.0}
+			samples := []float64{0.0, 0.5, 1.0, 1.5, 3.2, 6.66}
+			buckets, count, sum := SampledBuckets(samples, ubs)
 
-		expectedsum := 0.0
-		for _, sample := range samples {
-			expectedsum += sample
-		}
-		Expect(sum).To(Equal(expectedsum))
+			Expect(count).To(Equal(uint64(len(samples))))
 
-		Expect(buckets).To(HaveLen(len(ubs)))
-		Expect(buckets).To(Equal(Buckets{
-			1.0: 3,
-			2.0: 3 + 1,
-			4.0: 3 + 1 + 1,
-		}))
+			expectedsum := 0.0
+			for _, sample := range samples {
+				expectedsum += sample
+			}
+			Expect(sum).To(Equal(expectedsum))
+
+			Expect(buckets).To(HaveLen(len(ubs)))
+			Expect(buckets).To(Equal(MappedBuckets{
+				1.0: 3,
+				2.0: 3 + 1,
+				4.0: 3 + 1 + 1,
+			}))
+		})
+
+		It("converts a histogram bucket map into a sorted bucket+boundary list", func() {
+			ubs := []float64{1.0, 2.0, 4.0}
+			samples := []float64{0.0, 0.5, 1.0, 1.5, 3.2, 6.66}
+			buckets, _, _ := SampledBuckets(samples, ubs)
+			bucketlist := OrderedBuckets(buckets)
+			Expect(bucketlist).To(HaveLen(len(ubs)))
+			for idx := range bucketlist {
+				if idx == 0 {
+					continue
+				}
+				Expect(bucketlist[idx-1].GetUpperBound()).To(
+					BeNumerically("<", bucketlist[idx].GetUpperBound()))
+			}
+			for _, bucket := range bucketlist {
+				Expect(buckets).To(HaveKeyWithValue(
+					bucket.GetUpperBound(), bucket.GetCumulativeCount()))
+			}
+		})
+
 	})
 
 })

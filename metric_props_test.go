@@ -45,7 +45,7 @@ func (c *someCollector) Collect(ch chan<- prometheus.Metric) {
 				"label": "scam",
 			}),
 		prometheus.CounterValue, 42.0)
-	buckets, count, sum := to.BucketsFromSamples(testHistoSamples, testHistoBoundaries)
+	buckets, count, sum := to.SampledBuckets(testHistoSamples, testHistoBoundaries)
 	ch <- prometheus.MustNewConstHistogram(
 		prometheus.NewDesc(
 			"foos",
