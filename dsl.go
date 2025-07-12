@@ -47,8 +47,9 @@ type MetricMatcher interface {
 	indexname() string
 }
 
-// MetricPropertyMatcher identifies metric family property or metric property
-// matchers.
+// MetricPropertyMatcher matches either a metric family property or a single
+// metric property matchers, depending on the level at which in the Prometheus
+// data model the property is located on.
 type MetricPropertyMatcher interface {
 	yesimametricpropertymatcher()
 }
@@ -56,6 +57,13 @@ type MetricPropertyMatcher interface {
 // Gauge succeeds if a metric (metric family) is a Prometheus Gauge and
 // additionally satisfies all optionally specified name, help, and labels
 // matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveMetricValue]
 func Gauge(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_GAUGE, props...)
 }
@@ -63,13 +71,27 @@ func Gauge(props ...MetricPropertyMatcher) MetricMatcher {
 // Counter succeeds if a metric (metric family) is a Prometheus Counter and
 // additionally satisfies all optionally specified name, help, and labels
 // matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveMetricValue]
 func Counter(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_COUNTER, props...)
 }
 
-// Histogram succeeds if a metric (metric family) is a Prometheus Histogram and
-// additionally satisfies all optionally specified name, help, and labels
-// matchers.
+// Histogram succeeds if a metric (metric family) is a Prometheus “conventional”
+// Histogram and additionally satisfies all optionally specified name, help, and
+// labels matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveBucketBoundaries]
 func Histogram(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_HISTOGRAM, props...)
 }
@@ -142,6 +164,24 @@ func HaveMetricValue(value any) MetricPropertyMatcher {
 		matcher:  asMatcher(value),
 		expected: value,
 	}
+}
+
+// HaveBuckets succeeds if a metric is a Histogram and has the buckets (either
+// specified as map[float64]uint64 or [types.GomegaMatcher]) with upper
+// boundaries and counts. The “+Inf” must not be included in the buckets map but
+// instead is specified separately.
+func HaveBuckets(buckets any, count any) MetricPropertyMatcher {
+	return &HistoryBucketsMatcher{
+		expectedBuckets: buckets,
+		countMatcher:    asMatcher(count),
+		expectedCount:   count,
+	}
+}
+
+// HaveEmptyBuckets succeeds if a metric is a Histogram and all its buckets as
+// well as its count (the implicit cumulative “+Inf” bucket) are zero.
+func HaveEmptyBuckets() metricPropertyMatcher {
+	return &HistoryEmptyBucketsMatcher{}
 }
 
 // HaveBucketBoundaries succeeds if a metric is a Histogram and has the matching

@@ -56,6 +56,67 @@ func (m *MetricValueMatcher) matchProperty(metric *prommodel.Metric) (bool, erro
 
 // ----
 
+type HistoryBucketsMatcher struct {
+	expectedBuckets any
+
+	countMatcher  types.GomegaMatcher
+	expectedCount any
+}
+
+var (
+	_ (MetricPropertyMatcher) = (*HistoryBucketsMatcher)(nil)
+	_ (metricPropertyMatcher) = (*HistoryBucketsMatcher)(nil)
+	_ (format.GomegaStringer) = (*HistoryBucketsMatcher)(nil)
+)
+
+func (m *HistoryBucketsMatcher) GomegaString() string {
+	return "buckets:" // FIXME:
+}
+
+func (m *HistoryBucketsMatcher) yesimametricpropertymatcher() {}
+
+func (m *HistoryBucketsMatcher) matchProperty(metric *prommodel.Metric) (bool, error) {
+	if metric.Histogram == nil {
+		return false, nil
+	}
+
+	// Finally match the implicit "+Inf" bucket's count property.
+	return m.countMatcher.Match(metric.Histogram.SampleCount)
+}
+
+// ----
+
+type HistoryEmptyBucketsMatcher struct{}
+
+var (
+	_ (MetricPropertyMatcher) = (*HistoryEmptyBucketsMatcher)(nil)
+	_ (metricPropertyMatcher) = (*HistoryEmptyBucketsMatcher)(nil)
+	_ (format.GomegaStringer) = (*HistoryEmptyBucketsMatcher)(nil)
+)
+
+func (m *HistoryEmptyBucketsMatcher) GomegaString() string {
+	return "buckets: <empty>"
+}
+
+func (m *HistoryEmptyBucketsMatcher) yesimametricpropertymatcher() {}
+
+func (m *HistoryEmptyBucketsMatcher) matchProperty(metric *prommodel.Metric) (bool, error) {
+	if metric.Histogram == nil {
+		return false, nil
+	}
+	if metric.Histogram.GetSampleCount() != 0 {
+		return false, nil
+	}
+	for _, bucket := range metric.Histogram.Bucket {
+		if bucket.GetCumulativeCount() != 0 {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// ----
+
 // HistoryBucketBoundariesMatcher matches the explicit bucket upper boundaries.
 type HistoryBucketBoundariesMatcher struct {
 	matcher  types.GomegaMatcher
