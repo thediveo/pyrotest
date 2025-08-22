@@ -29,6 +29,7 @@ import (
 // value matches as either verbatim string matches or alternatively using
 // [types.GomegaMatcher].
 type HaveLabelMatcher struct {
+	sealedMetPropMatcher
 	name         any
 	value        any
 	matcherName  string
@@ -64,8 +65,6 @@ func newHaveLabelMatcher(name, value any, matchername string) MetricPropertyMatc
 		valueMatcher: asStringMatcher(value),
 	}
 }
-
-func (m *HaveLabelMatcher) yesimametricpropertymatcher() {}
 
 // GomegaString returns an optimized string representation for failure
 // reporting, reducing visual clutter as much as possible. In case both the
