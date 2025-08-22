@@ -47,15 +47,23 @@ type MetricMatcher interface {
 	indexname() string
 }
 
-// MetricPropertyMatcher identifies metric family property or metric property
-// matchers.
+// MetricPropertyMatcher is an interface marker for matchers of eiher a metric
+// family property or a single metric property, depending on the level at which
+// in the Prometheus data model the property is located on.
 type MetricPropertyMatcher interface {
-	yesimametricpropertymatcher()
+	sealedMetricPropertyMatcher()
 }
 
 // Gauge succeeds if a metric (metric family) is a Prometheus Gauge and
 // additionally satisfies all optionally specified name, help, and labels
 // matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveMetricValue]
 func Gauge(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_GAUGE, props...)
 }
@@ -63,13 +71,27 @@ func Gauge(props ...MetricPropertyMatcher) MetricMatcher {
 // Counter succeeds if a metric (metric family) is a Prometheus Counter and
 // additionally satisfies all optionally specified name, help, and labels
 // matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveMetricValue]
 func Counter(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_COUNTER, props...)
 }
 
-// Histogram succeeds if a metric (metric family) is a Prometheus Histogram and
-// additionally satisfies all optionally specified name, help, and labels
-// matchers.
+// Histogram succeeds if a metric (metric family) is a Prometheus “conventional”
+// Histogram and additionally satisfies all optionally specified name, help, and
+// labels matchers.
+//
+// See also:
+//   - [HaveName]
+//   - [HaveUnit]
+//   - [HaveHelp]
+//   - [HaveLabel] and [HaveLabelWithValue]
+//   - [HaveBucketBoundaries]
 func Histogram(props ...MetricPropertyMatcher) MetricMatcher {
 	return metricOfType(prommodel.MetricType_HISTOGRAM, props...)
 }
@@ -118,7 +140,7 @@ func HaveName(name any) MetricPropertyMatcher {
 }
 
 // HaveUnit succeeds if a metric family has a unit that either equals the passed
-// string or matches the passed GomegaMatcher.
+// string or matches the passed [types.GomegaMatcher].
 func HaveUnit(unit any) MetricPropertyMatcher {
 	return &MetricFamilyUnitMatcher{
 		matcher:  asStringMatcher(unit),
@@ -127,10 +149,43 @@ func HaveUnit(unit any) MetricPropertyMatcher {
 }
 
 // HaveHelp succeeds if a metric family has a help text that either equals the
-// passed string or matches the passed GomegaMatcher.
+// passed string or matches the passed [types.GomegaMatcher].
 func HaveHelp(help any) MetricPropertyMatcher {
 	return &MetricFamilyHelpMatcher{
 		matcher:  asStringMatcher(help),
 		expected: help,
+	}
+}
+
+// HaveMetricValue succeeds if a metric is a Counter or a Gauge and has a
+// matching float64 value.
+func HaveMetricValue(value any) MetricPropertyMatcher {
+	return &MetricValueMatcher{
+		matcher:  asMatcher(value),
+		expected: value,
+	}
+}
+
+// HaveAllEmptyBuckets succeeds if a metric is a Histogram and all its buckets as
+// well as its count (the implicit cumulative “+Inf” bucket) are zero.
+func HaveAllEmptyBuckets() MetricPropertyMatcher {
+	return &HistoryEmptyBucketsMatcher{}
+}
+
+// HaveSomeFilledBuckets succeeds if a metric is a Histogram and at least one of
+// its buckets, including the implicit “+Inf” bucket, is not empty.
+func HaveSomeFilledBuckets() MetricPropertyMatcher {
+	return &HistorySomeFilledBucketsMatcher{}
+}
+
+// HaveBucketBoundaries succeeds if a metric is a Histogram and has the matching
+// (float64) bucket upper boundaries. Please note the “+Inf” boundary is
+// implicit and thus must not be specified in the bucket boundaries slice passed
+// to this matcher. If passed a [types.GomegaMatcher], this matcher gets passed
+// a slice of []uint64 explicit boundaries as the actual value.
+func HaveBucketBoundaries(values any) MetricPropertyMatcher {
+	return &HistoryBucketBoundariesMatcher{
+		matcher:  asMatcher(values),
+		expected: values,
 	}
 }

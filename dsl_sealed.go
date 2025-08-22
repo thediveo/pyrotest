@@ -14,21 +14,10 @@
 
 package pyrotest
 
-import (
-	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
-)
+// sealedMetPropMatcher should be embedded into matcher struct types to mark
+// them as MetricPropertyMatcher.
+type sealedMetPropMatcher struct{}
 
-// asStringMatcher expects a to be either a string or a types.GomegaMatcher and
-// then always returns a suitable types.GomegaMatcher, otherwise nil in case of
-// an unsupported value type of a.
-func asStringMatcher(a any) types.GomegaMatcher {
-	switch v := a.(type) {
-	case string:
-		return gomega.Equal(v)
-	case types.GomegaMatcher:
-		return v
-	default:
-		return nil
-	}
-}
+// sealedMetricPropertyMatcher satisfies the unexported sealing method of
+// MetricPropertyMatcher.
+func (sealedMetPropMatcher) sealedMetricPropertyMatcher() {}

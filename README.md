@@ -4,16 +4,22 @@
 [![License](https://img.shields.io/github/license/thediveo/pyrotest)](https://img.shields.io/github/license/thediveo/pyrotest)
 ![build and test](https://github.com/thediveo/pyrotest/actions/workflows/buildandtest.yaml/badge.svg?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/thediveo/pyrotest)](https://goreportcard.com/report/github.com/thediveo/pyrotest)
-![Coverage](https://img.shields.io/badge/Coverage-95.6%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-92.0%25-brightgreen)
 
-`pyrotest` provides [Gomega matchers](https://onsi.github.io/gomega/) as well as
-specially typed matchers for reasoning about Prometheus metrics.
+`pyrotest` provides [Gomega matchers](https://onsi.github.io/gomega/) in
+combination with specially typed matchers for reasoning about Prometheus metrics
+in unit tests. This package is opinionated in that certain details about how the
+Prometheus module organizes metrics should not matter and tests should be
+authored from the perspective of a user working with Prometheus metrics, not
+necessarily from the perspective of the Prometheus developers.
 
-In particular, it conceals the slightly fussy hierarchical differentiation of
-the Prometheus data model into metric families that only then contain individual
-metrics (that is, the individual “timeseries”) as a nasty implementation detail.
-Not least, as a prometheus user you deal with the (ultimate) metrics, not
-families.
+In consequence, `pyrotest` conceals the somewhat fussy hierarchical
+differentiation of the Prometheus data model into metric _families_ only then
+containing the individual _metrics_ (that is, the individual “timeseries”) as a
+nasty implementation detail. Not least, as a prometheus user you deal with the
+(ultimate) metrics, not families.
+
+This module supports counters, gauges, and the so-called “classic” histograms.
 
 ## Example
 
@@ -39,6 +45,8 @@ var _ = Describe("example", func() {
             Counter(HaveName(ContainSubstring("_total")),
                 HaveHelp(ContainSubstring("no help")),
                 HaveLabelWithValue("label", "scam")),
+            Histogram(HaveName("barz"),
+                HaveSomeFilledBuckets()),
         ))
     })
 
