@@ -100,7 +100,7 @@ func Histogram(props ...MetricPropertyMatcher) MetricMatcher {
 // optional value).
 //
 // The value passed into the label parameter can be either a string or
-// GomegaMatcher:
+// [types.Matcher]:
 //   - a string in the form of “name” where it must match a label name, or
 //     in the “name=value” form where it must match both the label name and
 //     value.
@@ -116,9 +116,9 @@ func HaveLabel(label any) MetricPropertyMatcher {
 // and value.
 //
 // The value passed into the name parameter can be either a string or a
-// GomegaMatcher. Similarly, the value passed into the value parameter can also
-// be either a string or a GomegaMatcher. Passing any other type of value to
-// either the name or value parameter is an error.
+// [types.GomegaMatcher]. Similarly, the value passed into the value parameter
+// can also be either a string or a GomegaMatcher. Passing any other type of
+// value to either the name or value parameter is an error.
 //
 // See also [HaveLabel].
 func HaveLabelWithValue(name, value any) MetricPropertyMatcher {
@@ -126,7 +126,7 @@ func HaveLabelWithValue(name, value any) MetricPropertyMatcher {
 }
 
 // HaveName succeeds if a metric family has a name that either equals the passed
-// string or matches the passed GomegaMatcher.
+// string or matches the passed [types.GomegaMatcher].
 func HaveName(name any) MetricPropertyMatcher {
 	var plainname string
 	if str, ok := name.(string); ok {
