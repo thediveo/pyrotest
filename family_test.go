@@ -15,9 +15,11 @@
 package pyrotest
 
 import (
-	"github.com/onsi/gomega/types"
 	prommodel "github.com/prometheus/client_model/go"
+
 	"github.com/thediveo/pyrotest/to"
+
+	"github.com/onsi/gomega/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

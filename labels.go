@@ -95,20 +95,13 @@ func (m *HaveLabelMatcher) matchLabel(label *prommodel.LabelPair) (bool, error) 
 			m.value)
 	}
 	success, err := m.nameMatcher.Match(label.GetName())
-	if err != nil {
+	if err != nil || !success {
 		return false, err
-	}
-	if !success {
-		return false, nil
 	}
 	if m.valueMatcher == nil { // no value to match, so we've found a matching label
 		return true, nil
 	}
-	success, err = m.valueMatcher.Match(label.GetValue())
-	if err != nil {
-		return false, err
-	}
-	return success, nil
+	return m.valueMatcher.Match(label.GetValue())
 }
 
 // matchAllLabels succeeds if the all expected labels match (a subset of) the

@@ -15,9 +15,10 @@
 package pyrotest
 
 import (
+	prommodel "github.com/prometheus/client_model/go"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	prommodel "github.com/prometheus/client_model/go"
 )
 
 var _ = Describe("BeAMetric", func() {

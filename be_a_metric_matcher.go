@@ -17,9 +17,10 @@ package pyrotest
 import (
 	"fmt"
 
+	prommodel "github.com/prometheus/client_model/go"
+
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	prommodel "github.com/prometheus/client_model/go"
 )
 
 type BeAMetricMatcher struct {

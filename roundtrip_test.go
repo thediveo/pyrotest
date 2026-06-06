@@ -17,10 +17,10 @@ package pyrotest_test
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
+	. "github.com/thediveo/pyrotest" // this ensures that dot importing doesn't cause any conflicts
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/thediveo/pyrotest" // this ensures that dot importing doesn't cause any conflicts
 )
 
 type testCollector struct{}

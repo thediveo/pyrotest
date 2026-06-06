@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/onsi/gomega/format"
 	prommodel "github.com/prometheus/client_model/go"
+
+	"github.com/onsi/gomega/format"
 )
 
 // metricNamer returns the plain string metric (family) name a
@@ -95,11 +96,13 @@ func (m *TypedMetricFamilyMatcher) expectedProperties() string {
 	var s strings.Builder
 	for _, propMatcher := range m.familyPropertyMatchers {
 		s.WriteRune('\n')
-		s.WriteString(format.Indent + propMatcher.(format.GomegaStringer).GomegaString())
+		s.WriteString(format.Indent)
+		s.WriteString(propMatcher.(format.GomegaStringer).GomegaString())
 	}
 	for _, propMatcher := range m.metricPropertyMatchers {
 		s.WriteRune('\n')
-		s.WriteString(format.Indent + propMatcher.(format.GomegaStringer).GomegaString())
+		s.WriteString(format.Indent)
+		s.WriteString(propMatcher.(format.GomegaStringer).GomegaString())
 	}
 	return s.String()
 }
