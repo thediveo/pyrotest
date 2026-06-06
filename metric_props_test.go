@@ -17,6 +17,7 @@ package pyrotest
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	prommodel "github.com/prometheus/client_model/go"
+
 	"github.com/thediveo/pyrotest/to"
 
 	. "github.com/onsi/ginkgo/v2"

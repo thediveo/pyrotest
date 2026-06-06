@@ -15,11 +15,12 @@
 package pyrotest
 
 import (
-	"github.com/onsi/gomega/types"
 	prommodel "github.com/prometheus/client_model/go"
+
+	"github.com/onsi/gomega/types"
 )
 
-// MetricFamilies maps from a metric family name to its metric family.
+// MetricsFamilies maps from a metric family name to its metric family.
 type MetricsFamilies = map[string]*prommodel.MetricFamily
 
 // BeAMetric succeeds if actual is a Prometheus [*prommodel.MetricFamily] that

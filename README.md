@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/thediveo/pyrotest)](https://img.shields.io/github/license/thediveo/pyrotest)
 ![build and test](https://github.com/thediveo/pyrotest/actions/workflows/buildandtest.yaml/badge.svg?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/thediveo/pyrotest)](https://goreportcard.com/report/github.com/thediveo/pyrotest)
-![Coverage](https://img.shields.io/badge/Coverage-92.0%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-91.6%25-brightgreen)
 
 `pyrotest` provides [Gomega matchers](https://onsi.github.io/gomega/) in
 combination with specially typed matchers for reasoning about Prometheus metrics
@@ -76,5 +76,5 @@ is, major versions _N_ and _N_-1 (where _N_ is the current major version).
 
 ## Copyright and License
 
-`pyrotest` is Copyright 2025 Harald Albrecht, and licensed under the Apache
-License, Version 2.0.
+`pyrotest` is Copyright 2025, 2026 Harald Albrecht, and licensed under the
+Apache License, Version 2.0.
